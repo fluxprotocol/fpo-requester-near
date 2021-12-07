@@ -1,13 +1,17 @@
-// TODO provider - pair - price storage
-// use fungible_token_handler::{fungible_token_transfer};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::LookupMap;
 use near_sdk::serde::{Serialize, Deserialize};
-use near_sdk::json_types::{WrappedTimestamp, U128, U64};
+use near_sdk::json_types::{WrappedTimestamp, U128};
 use near_sdk::{env, near_bindgen, ext_contract, AccountId, BorshStorageKey, PanicOnDefault, Promise};
+use flux_sdk::{consts::GAS_BASE_SET_OUTCOME};
 near_sdk::setup_alloc!();
 
-// mod fungible_token_handler;
+#[ext_contract]
+pub trait OracleContractExtern {
+    fn get_entry(pair: String, user: AccountId);
+    fn aggregate_avg(pairs: Vec<String>, users: Vec<AccountId>, min_last_update: WrappedTimestamp);
+    fn aggregate_collect(pairs: Vec<String>, users: Vec<AccountId>, min_last_update: WrappedTimestamp);
+}
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
 pub struct PriceEntry {
@@ -80,9 +84,36 @@ impl Requester {
                 .unwrap_or(Provider::new());
             provider.pairs.insert(&pairs[i], &entries[i]);
         }
+        // TODO shall I return these answers?
     }
 
-    pub fn get_outcome(&self, providers: Vec<AccountId>, pairs: Vec<String>) {
-        
+    pub fn get_entry(&self, pair: String, provider: AccountId) -> Promise {
+        oracle_contract_extern::get_entry(
+            pair,
+            provider,
+            &self.oracle,
+            env::attached_deposit(),
+            GAS_BASE_SET_OUTCOME / 10 // TODO is gas alright
+        )
+    }
+    pub fn aggregate_avg(&self, pairs: Vec<String>, providers: Vec<AccountId>, min_last_update: WrappedTimestamp) -> Promise {
+        oracle_contract_extern::aggregate_avg(
+            pairs,
+            providers,
+            min_last_update,
+            &self.oracle,
+            env::attached_deposit(),
+            GAS_BASE_SET_OUTCOME / 10 // TODO is gas alright
+        )
+    }
+    pub fn aggregate_collect(&self, pairs: Vec<String>, providers: Vec<AccountId>, min_last_update: WrappedTimestamp) ->Promise {
+        oracle_contract_extern::aggregate_collect(
+            pairs,
+            providers,
+            min_last_update,
+            &self.oracle,
+            env::attached_deposit(),
+            GAS_BASE_SET_OUTCOME / 10 // TODO is gas alright
+        )
     }
 }
