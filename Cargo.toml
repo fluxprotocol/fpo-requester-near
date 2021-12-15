@@ -4,20 +4,10 @@ version = "0.1.0"
 authors = ["jack e boi <jack@flux.xyz>"]
 edition = "2018"
 
-[profile.release]
-codegen-units = 1
-# Tell `rustc` to optimize for small code size.
-opt-level = "z"
-lto = true
-debug = false
-panic = "abort"
-overflow-checks = true
-
 [lib]
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 near-sdk = "3.1.0"
-near-contract-standards = "3.1.0"
 serde = "1.0.118"
 flux-sdk = { git = "https://github.com/fluxprotocol/flux-sdk-rs.git", rev="4eb0111e6d24a984aeb3e4a2de2fc9feb8a3482c" }
