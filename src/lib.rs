@@ -2,26 +2,12 @@ use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::LookupMap;
 use near_sdk::serde::{Serialize, Deserialize};
 use near_sdk::json_types::{WrappedTimestamp, U128};
-use near_sdk::{env, near_bindgen, AccountId, PanicOnDefault, Promise};
+use near_sdk::{env, near_bindgen, AccountId, PanicOnDefault, Promise, PromiseOrValue};
 use flux_sdk::{WrappedBalance};
 use near_sdk::serde_json::json;
 mod fungible_token_handler;
 use fungible_token_handler::{fungible_token, ENTRY_GAS};
-// use near_contract_standards::fungible_token::core_impl;
-// use near_contract_standards::fungible_token::FungibleToken;
 near_sdk::setup_alloc!();
-
-// near_contract_standards::impl_fungible_token_core!(Requester, token, on_tokens_burned);
-
-// const GAS_BASE_TRANSFER: Gas = 5_000_000_000_000;
-// const ENTRY_GAS: Gas = 200_000_000_000_000;
-
-// #[ext_contract]
-// pub trait OracleContractExtern {
-//     fn get_entry(pair: String, user: AccountId);
-//     fn aggregate_avg(pairs: Vec<String>, users: Vec<AccountId>, min_last_update: WrappedTimestamp);
-//     fn aggregate_collect(pairs: Vec<String>, users: Vec<AccountId>, min_last_update: WrappedTimestamp);
-// }
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
 pub struct PriceEntry {
@@ -80,7 +66,8 @@ impl Requester {
             providers: LookupMap::new("p".as_bytes()),
         }
     }
-    pub fn set_outcome(&mut self, providers: Vec<AccountId>, pairs: Vec<String>, entries: Vec<PriceEntry>) -> (Vec<AccountId>, Vec<String>, Vec<PriceEntry>) {
+    pub fn set_outcome(&mut self, providers: Vec<AccountId>, pairs: Vec<String>, entries: Vec<PriceEntry>) -> PromiseOrValue<u128>
+     {
         self.assert_oracle();
 
         for i in 0..providers.len() {
@@ -90,15 +77,19 @@ impl Requester {
                 .unwrap_or(Provider::new());
             provider.pairs.insert(&pairs[i], &entries[i]);
         }
-        (providers, pairs, entries)
+        PromiseOrValue::Value(0)
     }
     #[payable]
-    pub fn get_entry(&mut self, pair: String, provider: AccountId, amount: WrappedBalance) -> Promise {
+    pub fn get_entry(&mut self, 
+            pair: String, 
+            provider: AccountId, 
+            amount: WrappedBalance, 
+            min_last_update: WrappedTimestamp) -> Promise {
         fungible_token::ft_transfer_call(
             self.oracle.clone(),
             amount,
             None,
-            json!({ "pair": pair, "provider": provider }).to_string(),
+            json!({ "avg": null, "pairs": [pair], "providers": [provider], "min_last_update": min_last_update }).to_string(),
             &self.payment_token,
             1,
             ENTRY_GAS,
@@ -115,7 +106,6 @@ impl Requester {
             amount,
             None,
             json!({ "avg": true, "pairs": pairs, "providers": providers, "min_last_update": min_last_update }).to_string(),
-            // Near params
             &self.payment_token,
             1,
             ENTRY_GAS,
@@ -126,13 +116,12 @@ impl Requester {
         pairs: Vec<String>, 
         providers: Vec<AccountId>, 
         min_last_update: WrappedTimestamp, 
-        amount: WrappedBalance) ->Promise {
+        amount: WrappedBalance) -> Promise {
         fungible_token::ft_transfer_call(
             self.oracle.clone(),
             amount,
             None,
             json!({ "avg": false, "pairs": pairs, "providers": providers, "min_last_update": min_last_update }).to_string(),
-            // Near params
             &self.payment_token,
             1,
             ENTRY_GAS,
