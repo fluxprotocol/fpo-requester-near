@@ -7,6 +7,7 @@ use flux_sdk::{WrappedBalance};
 use near_sdk::serde_json::json;
 mod fungible_token_handler;
 use fungible_token_handler::{fungible_token, ENTRY_GAS};
+use near_sdk::{Balance};
 near_sdk::setup_alloc!();
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
@@ -14,6 +15,43 @@ pub struct PriceEntry {
     price: U128,                   // Last reported price
     decimals: u16,                 // Amount of decimals (e.g. if 2, 100 = 1.00)
     last_update: WrappedTimestamp, // Time or report
+}
+
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
+pub struct Outcome {
+    entry: Option<Vec<PriceEntry>>,
+    refund: Balance
+}
+
+// TODO is this stupid to have for just the aggregate_collect
+// #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
+// pub struct Outcomes {
+//     entries: Option<Vec<PriceEntry>>,
+//     refund: Balance
+// }
+
+// #[derive(Serialize, Deserialize)]
+// pub enum OutcomePayload {
+//     Outcome(Outcome),
+//     Outcomes(Outcomes),
+//     None
+// }
+
+// impl OutcomePayload {
+//     fn outcome(self) -> Outcome {
+//         if let OutcomePayload::Outcome(c) = self { c } else { panic!("Not an Outcome") }
+//     }
+
+//     fn outcomes(self) -> Outcomes {
+//         if let OutcomePayload::Outcomes(d) = self { d } else { panic!("Not Outcomes") }
+//     }
+// }
+
+pub struct ResponsePayload {
+    method: String,
+    pairs: Vec<String>,
+    providers: Vec<AccountId>,
+    outcome: Outcome,
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
@@ -66,17 +104,39 @@ impl Requester {
             providers: LookupMap::new("p".as_bytes()),
         }
     }
-    pub fn set_outcome(&mut self, providers: Vec<AccountId>, pairs: Vec<String>, entries: Vec<PriceEntry>) -> PromiseOrValue<u128>
+    pub fn set_outcome(&mut self, payload: ResponsePayload) -> PromiseOrValue<u128>
      {
         self.assert_oracle();
+        // TODO handle differently for each method type
+        // return refund to user from outcome
+        match payload.method.as_ref() {
+            "get_entry" => {
+                let entry = payload.outcome.entry.unwrap()[0];
+                let provider = self.providers.get(&payload.providers[0]).unwrap_or(Provider::new());
+                provider.set_pair(payload.pairs[0], entry);
+                self.providers.insert(&payload.providers[0], &provider);
+            }
+            "aggregate_avg" => {
+                let entry = payload.outcome.entry.unwrap()[0];
+                let provider = self.providers.get(&payload.providers[0]).unwrap_or(Provider::new());
+                // TODO see if aggregate exists and set new price, otherwise set name and add
+                let pair_agg_name = payload.pairs[0].to_owned();
+                pair_agg_name.push_str(&"AGG".to_owned()); 
+                provider.set_pair(pair_agg_name, entry);
+                self.providers.insert(&payload.providers[0], &provider);
 
-        for i in 0..providers.len() {
-            let mut provider = self
-                .providers
-                .get(&providers[i])
-                .unwrap_or(Provider::new());
-            provider.pairs.insert(&pairs[i], &entries[i]);
+            }
+            "aggregate_collect" => {
+
+            }
         }
+        // for i in 0..payload.providers.len() {
+        //     let mut provider = self
+        //         .providers
+        //         .get(&payload.providers[i])
+        //         .unwrap_or(Provider::new());
+        //     provider.pairs.insert(&payload.pairs[i], &payload.entries[i]);
+        // }
         PromiseOrValue::Value(0)
     }
     #[payable]
@@ -85,6 +145,7 @@ impl Requester {
             provider: AccountId, 
             amount: WrappedBalance, 
             min_last_update: WrappedTimestamp) -> Promise {
+        // TODO if min_last_update within block, return most recent value
         fungible_token::ft_transfer_call(
             self.oracle.clone(),
             amount,
