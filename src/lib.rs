@@ -23,30 +23,6 @@ pub struct Outcome {
     refund: Balance
 }
 
-// TODO is this stupid to have for just the aggregate_collect
-// #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
-// pub struct Outcomes {
-//     entries: Option<Vec<PriceEntry>>,
-//     refund: Balance
-// }
-
-// #[derive(Serialize, Deserialize)]
-// pub enum OutcomePayload {
-//     Outcome(Outcome),
-//     Outcomes(Outcomes),
-//     None
-// }
-
-// impl OutcomePayload {
-//     fn outcome(self) -> Outcome {
-//         if let OutcomePayload::Outcome(c) = self { c } else { panic!("Not an Outcome") }
-//     }
-
-//     fn outcomes(self) -> Outcomes {
-//         if let OutcomePayload::Outcomes(d) = self { d } else { panic!("Not Outcomes") }
-//     }
-// }
-
 pub struct ResponsePayload {
     method: String,
     pairs: Vec<String>,
@@ -65,11 +41,6 @@ impl Provider {
             pairs: LookupMap::new("ps".as_bytes()),
         }
     }
-    // pub fn get_entry_expect(&self, pair: &String) -> PriceEntry {
-    //     self.pairs
-    //         .get(pair)
-    //         .expect("no price available for this pair")
-    // }
     pub fn set_pair(&mut self, pair: String, entry: PriceEntry) {
         self.pairs.insert(&pair, &entry);
     }
@@ -100,14 +71,12 @@ impl Requester {
         Self {
             oracle,
             payment_token,
-            // TODO return to StorageKey implementation
             providers: LookupMap::new("p".as_bytes()),
         }
     }
     pub fn set_outcome(&mut self, payload: ResponsePayload) -> PromiseOrValue<u128>
      {
         self.assert_oracle();
-        // TODO handle differently for each method type
         // return refund to user from outcome
         match payload.method.as_ref() {
             "get_entry" => {
@@ -119,7 +88,6 @@ impl Requester {
             "aggregate_avg" => {
                 let entry = payload.outcome.entry.unwrap()[0];
                 let provider = self.providers.get(&payload.providers[0]).unwrap_or(Provider::new());
-                // TODO see if aggregate exists and set new price, otherwise set name and add
                 let pair_agg_name = payload.pairs[0].to_owned();
                 pair_agg_name.push_str(&"AGG".to_owned()); 
                 provider.set_pair(pair_agg_name, entry);
@@ -127,16 +95,16 @@ impl Requester {
 
             }
             "aggregate_collect" => {
-
+                    let entries = payload.outcome.entry.unwrap();
+                    for i in 0..payload.providers.len() {
+                    let mut provider = self
+                        .providers
+                        .get(&payload.providers[i])
+                        .unwrap_or(Provider::new());
+                    provider.pairs.insert(&payload.pairs[i], &entries[i]);
+                }
             }
         }
-        // for i in 0..payload.providers.len() {
-        //     let mut provider = self
-        //         .providers
-        //         .get(&payload.providers[i])
-        //         .unwrap_or(Provider::new());
-        //     provider.pairs.insert(&payload.pairs[i], &payload.entries[i]);
-        // }
         PromiseOrValue::Value(0)
     }
     #[payable]
@@ -150,7 +118,7 @@ impl Requester {
             self.oracle.clone(),
             amount,
             None,
-            json!({ "avg": null, "pairs": [pair], "providers": [provider], "min_last_update": min_last_update }).to_string(),
+            json!({ "method": "get_entry", "pairs": [pair], "providers": [provider], "min_last_update": min_last_update }).to_string(),
             &self.payment_token,
             1,
             ENTRY_GAS,
@@ -162,11 +130,12 @@ impl Requester {
             providers: Vec<AccountId>, 
             min_last_update: WrappedTimestamp, 
             amount: WrappedBalance) -> Promise {
+        // TODO if min_last_update within block, return most recent value
         fungible_token::ft_transfer_call(
             self.oracle.clone(),
             amount,
             None,
-            json!({ "avg": true, "pairs": pairs, "providers": providers, "min_last_update": min_last_update }).to_string(),
+            json!({ "method": "aggregate_avg", "pairs": pairs, "providers": providers, "min_last_update": min_last_update }).to_string(),
             &self.payment_token,
             1,
             ENTRY_GAS,
@@ -178,11 +147,12 @@ impl Requester {
         providers: Vec<AccountId>, 
         min_last_update: WrappedTimestamp, 
         amount: WrappedBalance) -> Promise {
+        // TODO if min_last_update within block, return most recent value
         fungible_token::ft_transfer_call(
             self.oracle.clone(),
             amount,
             None,
-            json!({ "avg": false, "pairs": pairs, "providers": providers, "min_last_update": min_last_update }).to_string(),
+            json!({ "method": "aggregate_collect", "pairs": pairs, "providers": providers, "min_last_update": min_last_update }).to_string(),
             &self.payment_token,
             1,
             ENTRY_GAS,
