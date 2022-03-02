@@ -2,7 +2,7 @@ use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::LookupMap;
 use near_sdk::serde::{Serialize, Deserialize};
 use near_sdk::json_types::{WrappedTimestamp, U128};
-use near_sdk::{PromiseResult, serde_json, env, Gas, ext_contract, near_bindgen, AccountId, PanicOnDefault, Promise, PromiseOrValue};
+use near_sdk::{log, PromiseResult, serde_json, env, Gas, ext_contract, near_bindgen, AccountId, PanicOnDefault, Promise};
 use near_sdk::{Balance};
 near_sdk::setup_alloc!();
 
@@ -28,7 +28,7 @@ pub fn assert_self() {
 }
 
 // const NO_DEPOSIT: Balance = 0;
-const BASE_GAS: Gas = 150_000_000_000_000;
+const BASE_GAS: Gas = 100_000_000_000_000;
 
 #[ext_contract(fpo)]
 trait FPO {
@@ -171,7 +171,7 @@ impl Requester {
             provider.set_pair(&pair, &entry);
             self.providers.insert(&provider_account_id, &provider);
     }
-    pub fn get_entry(
+    pub fn find_entry(
         &mut self, 
         pair: String, 
         provider: AccountId
@@ -179,19 +179,19 @@ impl Requester {
         fpo::get_entry(
                 pair.clone(), 
                 provider.clone(),
-                &env::current_account_id(), 
+                &self.oracle, 
                 0, 
                 BASE_GAS
             )
-            .then(
-                ext_self::set_entry(
-                pair,
-                provider,
-                &env::current_account_id(), 
-                0, 
-                BASE_GAS
-            )
-        )
+            // .then(
+            //     ext_self::set_entry(
+            //     pair,
+            //     provider,
+            //     &env::current_account_id(), 
+            //     0, 
+            //     BASE_GAS / 2
+            // )
+        // )
     }
     // #[payable]
     // pub fn aggregate_avg(&mut self, 
