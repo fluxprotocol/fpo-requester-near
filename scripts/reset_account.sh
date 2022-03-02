@@ -2,8 +2,8 @@
 
 # default params
 network=${network:-testnet}
-accountId=${accountId:-req.martymoriarty.testnet}
-master=${master:-martymoriarty.testnet}
+accountId=${accountId:-requester.YOUR_TESTNET_ACCOUNT_ID.testnet}
+master=${master:-YOUR_TESTNET_ACCOUNT_ID.testnet}
 initialBalance=${initialBalance:-5}
 
 while [ $# -gt 0 ]; do

@@ -1,1 +1,0 @@
-near delete $1 $2

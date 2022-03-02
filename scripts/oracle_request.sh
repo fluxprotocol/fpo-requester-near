@@ -2,7 +2,7 @@
 pair=${pair:-ETH / USD}
 provider=${provider:-amberdata.testnet}
 amount=${amount:-0}
-accountId=${accountId:-req.smartymoriarty.testnet}
+accountId=${accountId:-requester.YOUR_TESTNET_ACCOUNT_ID.testnet}
 oracle=${oracle:-fpo3.franklinwaller2.testnet}
 min_last_update=${min_last_update:-1646094683}
 
