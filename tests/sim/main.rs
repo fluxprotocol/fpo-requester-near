@@ -254,61 +254,61 @@ fn simulate_agg_median() {
 
 
     // create a price pair, check if it exists, and get the value
-    // call!(provider1, fpo.create_pair("ETH/USD".to_string(), 8, U128(2000))).assert_success();
-    // call!(
-    //     provider1,
-    //     fpo.pair_exists("ETH/USD".to_string(), provider1.account_id())
-    // )
-    // .assert_success();
-    // let price_entry = call!(
-    //     provider1,
-    //     fpo.get_entry("ETH/USD".to_string(), provider1.account_id())
+    call!(provider1, fpo.create_pair("ETH/USD".to_string(), 8, U128(2000))).assert_success();
+    call!(
+        provider1,
+        fpo.pair_exists("ETH/USD".to_string(), provider1.account_id())
+    )
+    .assert_success();
+    let price_entry = call!(
+        provider1,
+        fpo.get_entry("ETH/USD".to_string(), provider1.account_id())
+    );
+
+    // output and check the data
+    // println!(
+    //     "Returned Price: {:?}",
+    //     &price_entry.unwrap_json_value()
     // );
-
-    // // output and check the data
-    // // println!(
-    // //     "Returned Price: {:?}",
-    // //     &price_entry.unwrap_json_value()
-    // // );
-    // debug_assert_eq!(
-    //     &price_entry.unwrap_json_value()["price"].to_owned(),
-    //     &"2000".to_string()
-    // );
+    debug_assert_eq!(
+        &price_entry.unwrap_json_value()["price"].to_owned(),
+        &"2000".to_string()
+    );
 
 
-    // call!(provider2, fpo.create_pair("ETH/USD".to_string(), 8, U128(4000))).assert_success();
-    // call!(
-    //     provider2,
-    //     fpo.pair_exists("ETH/USD".to_string(), provider2.account_id())
-    // )
-    // .assert_success();
-    // let price_entry = call!(
-    //     provider2,
-    //     fpo.get_entry("ETH/USD".to_string(), provider2.account_id())
-    // );
-    // debug_assert_eq!(
-    //     &price_entry.unwrap_json_value()["price"].to_owned(),
-    //     &"4000".to_string()
-    // );
+    call!(provider2, fpo.create_pair("ETH/USD".to_string(), 8, U128(4000))).assert_success();
+    call!(
+        provider2,
+        fpo.pair_exists("ETH/USD".to_string(), provider2.account_id())
+    )
+    .assert_success();
+    let price_entry = call!(
+        provider2,
+        fpo.get_entry("ETH/USD".to_string(), provider2.account_id())
+    );
+    debug_assert_eq!(
+        &price_entry.unwrap_json_value()["price"].to_owned(),
+        &"4000".to_string()
+    );
 
 
 
-    // // println!("fpo.account_id() {:?}", fpo.account_id());
-    // // println!("requester.account_id() {:?}", requester.account_id());
+    // println!("fpo.account_id() {:?}", fpo.account_id());
+    // println!("requester.account_id() {:?}", requester.account_id());
 
 
 
-    // // call!(provider2, requester.get_price("ETH/USD".to_string(), provider1.account_id())).assert_success();
-    // let outcome = call!(provider2, requester.aggregate_median(vec!["ETH/USD".to_string(), "ETH/USD".to_string()], vec![provider1.account_id(), provider2.account_id()], U64(0)));
-    // println!("{:?}", outcome.promise_results());
-    // match &outcome.promise_results()[2]{
-    //     Some(res) => { 
-    //         println!("Retrieved Value: {:?}", res.unwrap_json_value());
-    //         assert_eq!(res.unwrap_json_value(), "3000");
-    //         // assert_eq!(near_sdk::serde_json::to_vec(&res.unwrap_json_value()), near_sdk::serde_json::to_vec(vec!["2000","4000"]));
-    //     },
-    //     None => println!("Retrieved Nothing"),
-    // }
+    // call!(provider2, requester.get_price("ETH/USD".to_string(), provider1.account_id())).assert_success();
+    let outcome = call!(provider2, requester.aggregate_median(vec!["ETH/USD".to_string(), "ETH/USD".to_string()], vec![provider1.account_id(), provider2.account_id()], U64(0)));
+    println!("{:?}", outcome.promise_results());
+    match &outcome.promise_results()[2]{
+        Some(res) => { 
+            println!("Retrieved Value: {:?}", res.unwrap_json_value());
+            assert_eq!(res.unwrap_json_value(), "3000");
+            // assert_eq!(near_sdk::serde_json::to_vec(&res.unwrap_json_value()), near_sdk::serde_json::to_vec(vec!["2000","4000"]));
+        },
+        None => println!("Retrieved Nothing"),
+    }
     
 
 }
