@@ -9,6 +9,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 near-sdk = "3.1.0"
+
 flux-sdk = { git = "https://github.com/fluxprotocol/flux-sdk-rs.git", rev="58ccd8e43701079937956c193749881b4fcfd7b0" }
 serde = "1.0.118"
 near-contract-standards = "3.1.0"
@@ -17,3 +18,10 @@ near-fpo = { path = "/home/mnaga/flux/fpo-near"}
 [dev-dependencies]
 near-sdk-sim = "3.1.0"
 
+anyhow = "1.0"
+near-primitives = "0.5.0"
+# # near-sdk = { path = "../../near-sdk" }
+near-units = "0.2.0"
+serde_json = "1.0"
+tokio = { version = "1.14", features = ["full"] }
+# # workspaces = "0.1"
